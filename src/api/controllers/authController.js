@@ -68,7 +68,7 @@ class authController {
         res.json({ flag: true, data: users, message: 'success', code: 200 });
     }
     async getUser(req,res){
-        console.log('req.user',req.user);
+        //console.log('req.user',req.user);
         res.json({flag:true,data:{user: req.user},message:'success',code:200}); 
     }
 }

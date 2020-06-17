@@ -11,6 +11,10 @@ const schema = {
     description: {
         type: String
     },
+    likes:{
+        type:Number,
+        default:0
+    },
     created_at:{
         type:Date,
         default:Date.now

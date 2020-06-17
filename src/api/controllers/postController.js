@@ -1,4 +1,5 @@
 const { PostService, UserService } = require('../../services');
+const {FollowModel} = require('../../models');
 const aws = require('aws-sdk');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
@@ -8,6 +9,7 @@ class postController {
         const model = req.body;
         try{
             const data = await PostService.create({...model,owner:req.user._id});
+            const addFriend = await UserService.handleNumber({_id :req.user._id},{ $inc: { posts: 1} });
             res.json({flag:true,data:{},message:'success',code:200});
         }catch{
             res.json({flag:false,data:{},message:'something went wrong',code:500});
@@ -53,6 +55,26 @@ class postController {
             return res.json({flag:true,data:url,message:'success',code:200})
           });
     }
+    async getProfilePosts(req,res){
+        //console.log('*****',req.params);
+        //const  username  =req.prams.username;
+        // console.log('hello 3');
+        // console.log('username',req.params.username);
+        const user = await UserService.getOne({username: req.params.username});
+        if(!user){
+            res.json({flag:false,data:{},message:"User Doesn't Exists",code:500}) 
+        }
+        const data = await FollowModel.findOne({follow_from:req.user._id , follow_to:user._id});
+        //console.log('isFollowing',isFollowing);
+        let isFollowing;
+        if(data){
+            isFollowing = true;    
+        }else{
+            isFollowing = false;
+        }
+        const posts = await PostService.getAll({owner : user._id })
+        res.json({flag:true,data:{posts:posts,user:user,isFollowing},message:'success',code:200});
+    }
     async deletePost(req, res) {
         const { id } = req.params;
         const post = await PostService.delete({ _id: id });
@@ -61,21 +83,29 @@ class postController {
     async followToggle(req, res) {
         const model = req.body;
         if (model.toggle) {
-            const createFollow = await PostService.createFollow({ follow_from: req.user._id, follow_to: model.follow_from })
-            res.json({ flag: true, data: {}, message: 'success', code: 200 });
+            const createFollow = await PostService.createFollow({ follow_from: req.user._id, follow_to: model.follow_to});
+            const manipulateFollow = await UserService.update({_id :req.user._id},{ $inc: { friends: 1} });
+            console.log('update true',manipulateFollow)
+            res.json({ flag: true, data: {toggle:!model.toggle}, message: 'success', code: 200 });
         } else {
-            const removeFollow = await PostService.removeFollow({ follow_from:  req.user._id, follow_to: model.follow_from });
-            res.json({ flag: true, data: {}, message: 'success', code: 200 })
+            const removeFollow = await PostService.removeFollow({ follow_from:  req.user._id, follow_to: model.follow_to });
+            const manipulateFollow = await UserService.update({_id :req.user._id},{ $inc: { friends: -1} });
+            console.log('update false',manipulateFollow);
+            res.json({ flag: true, data: {toggle:!model.toggle}, message: 'success', code: 200 })
         }
     }
     async likeToggle(req, res) {
         const model = req.body;
-        if (model.toggle) {
-            const createLike = await PostService.createLike({ post: model.post_id, user: req.user._id });
-            res.json({ flag: true, data: {}, message: 'success', code: 200 });
+        if (model.toggle === 1) {
+            const createLike = await PostService.createLike({ _id: model.post_id, user: req.user._id });
+            const manipulateLike = await PostService.update({_id: model.post_id},{ $inc: { likes: 1} });
+            
+            res.json({ flag: true, data: {createLike,manipulateLike}, message: 'success', code: 200 });
         } else {
-            const removeLike = await PostService.removeLike({ post: model.post_id, user: req.user._id });
-            res.json({ flag: true, data: {}, message: 'success', code: 200 });
+            const removeLike = await PostService.removeLike({ _id: model.post_id, user: req.user._id });
+            const manipulateLike = await PostService.update({_id: model.post_id},{ $inc: { likes: -1} });
+            
+            res.json({ flag: true, data: {removeLike,manipulateLike}, message: 'success', code: 200 });
         }
     }
     async getPostLikedUsers(req, res) {
@@ -86,8 +116,42 @@ class postController {
     async newsfeed(req, res) {
         //const follow_to = req.user._id;
         // const followers = await PostService.getfollowers({ follow_to })
-        const posts = await PostService.getposts(req.user._id);
-        res.json({ flag: true, data: posts, message: 'success', code: 200 });
+        //const posts = await PostService.getPostsForFeed(req.user._id);
+        //     const posts = await PostModel.aggregate([
+        //     { 
+        //         "$lookup": {
+        //             "from": "FollowModel",
+        //             "localField": "owner",
+        //             "foreignField": {$match : {follow_from : user_id} },
+        //             "as": "bList"
+        //         }
+        //     }
+        // ])
+        //     const posts = await FollowModel.aggregate([
+        //     { "$match": { "follow_from": user_id } }, 
+        //     { 
+        //         "$lookup": {
+        //             "from": "PostModel",
+        //             "localField": "follow_to",
+        //             "foreignField": "owner",
+        //             "as": "bList"
+        //         }
+        //     }
+        // ])
+        const followers_obj = await FollowModel.find({follow_from: req.user._id});
+        // const followers_obj = await FollowModel.aggregate([
+        //     { $match: { follow_from: req.user._id } },
+        //  ]);
+         console.log('follower Obj',followers_obj);
+         const followers_arr = followers_obj.map(follower=>{
+             return follower.follow_to;
+         });
+         const posts = await PostService.getPostsForFeed(followers_arr,req.user._id);
+        //  db.orders.aggregate([
+        //     { $match: { status: "A" } },
+        //     { $group: { _id: "$cust_id", total: { $sum: "$amount" } } }
+        //  ])
+        res.json({ flag: true, data: posts, message: 'success', code: 200 });   
     }
     
     async getdetailsbypublic(req,res) {
@@ -96,9 +160,9 @@ class postController {
         if(!user){
             return res.json({flag:false,data:{},message:'User doesn not Exist'})
         }
-        const posts = await PostService.getAll({owner : user._id});
+        const posts = await PostService.getAll({owner : user._id}); 
         return res.json({flag:true,data:{user,posts},message:'success',code:200});
     }
 }
 
-module.exports = new postController();
+module.exports = new postController(); 

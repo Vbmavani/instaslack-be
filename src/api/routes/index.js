@@ -37,6 +37,12 @@ const routes = [
     //post
     {
         method:'GET',
+        path:'/fetch-profile-posts/:username',
+        handler:'PostController.getProfilePosts',
+        authenticate:true,
+    },
+    {
+        method:'GET',
         path:'/newsfeed',
         handler:'PostController.newsfeed',
         authenticate:true,

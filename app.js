@@ -24,9 +24,11 @@ const jwt = require('jsonwebtoken')
 
 mongoose.connect(process.env.databaseURL, (err, bd) => {
     if (err) {
-        console.log('Unable to connect mongoDB');
+        console.log('Unable to connect mongoDB',err);
+    }else{
+        console.log('connected to mongoDB');
     }
-    console.log('connected to mongoDB');
+    
 
  
 })

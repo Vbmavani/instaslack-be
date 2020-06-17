@@ -14,6 +14,9 @@ class authService {
     async getAll(where){
         return UserModel.find(where)  
     }
+    async handleNumber(where,what){ 
+        return UserModel.update(where,what);
+    }
 }
     
 
