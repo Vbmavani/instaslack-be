@@ -1,13 +1,13 @@
 {
   "name": "instaslack-be",
   "version": "1.0.0",
+  "engines": {
+    "node": "12.8.1"
+  },
   "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "engines": {
-    "node": "10.8.1"
   },
   "repository": {
     "type": "git",
