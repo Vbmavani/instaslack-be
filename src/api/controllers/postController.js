@@ -97,6 +97,7 @@ class postController {
     async likeToggle(req, res) {
         const model = req.body;
         if (model.toggle === 1) {
+            
             const createLike = await PostService.createLike({ _id: model.post_id, user: req.user._id });
             const manipulateLike = await PostService.update({_id: model.post_id},{ $inc: { likes: 1} });
             
@@ -114,6 +115,10 @@ class postController {
         res.json({ flag: true, data: { users }, message: 'success', code: 200 });
     }
     async newsfeed(req, res) {
+        const {page_no} = req.query;
+        // console.log('page_number',page_no);
+        const skips = 3 * (page_no -1);
+        const limit= 3;
         //const follow_to = req.user._id;
         // const followers = await PostService.getfollowers({ follow_to })
         //const posts = await PostService.getPostsForFeed(req.user._id);
@@ -142,11 +147,11 @@ class postController {
         // const followers_obj = await FollowModel.aggregate([
         //     { $match: { follow_from: req.user._id } },
         //  ]);
-         console.log('follower Obj',followers_obj);
+        //  console.log('follower Obj',followers_obj);
          const followers_arr = followers_obj.map(follower=>{
              return follower.follow_to;
          });
-         const posts = await PostService.getPostsForFeed(followers_arr,req.user._id);
+         const posts = await PostService.getPostsForFeed(followers_arr,req.user._id,skips,limit);
         //  db.orders.aggregate([
         //     { $match: { status: "A" } },
         //     { $group: { _id: "$cust_id", total: { $sum: "$amount" } } }
