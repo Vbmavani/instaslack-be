@@ -17,7 +17,7 @@ app.listen(PORT, () => {
 })
 app.get('/', (req, res) => {
     res.json({
-        message: "Hello World! 2"
+        message: "Hello World! "
     })
 })
 const jwt = require('jsonwebtoken')
@@ -25,7 +25,7 @@ const jwt = require('jsonwebtoken')
 mongoose.connect(process.env.databaseURL, (err, bd) => {
     if (err) {
         console.log('Unable to connect mongoDB',err);
-    }else{
+    }else{ 
         console.log('connected to mongoDB');
     }
     
@@ -40,7 +40,7 @@ const routes = require('./src/api/routes');
 const ROUTE_PREFIX = '/api/v1';
 app.use(ROUTE_PREFIX, routes);
 
-
+ 
 
 //initialize passport service
 const {passportService} = require('./src/services');
